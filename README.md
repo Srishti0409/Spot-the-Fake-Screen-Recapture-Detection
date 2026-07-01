@@ -1,4 +1,4 @@
-# Spot the Fake Photo – Screen Recapture Detection
+# Spot-the-Fake-Screen-Recapture-Detection
 
 A lightweight computer vision and machine learning system that detects whether an input image is:
 
