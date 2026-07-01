@@ -1,92 +1,267 @@
-# Screen Photo Detection System (Anti-Spoofing Classifier)
+# Spot the Fake Photo – Screen Recapture Detection
 
-This repository contains a complete, production-ready, highly modular, and cleanly documented computer vision and machine learning system for screen photo detection (anti-spoofing). 
+A lightweight computer vision and machine learning system that detects whether an input image is:
 
-The system analyzes an uploaded image to determine if it is a **genuine photograph of a real-world object** (Label 0: Real Photo) or a **photograph taken of a digital screen** (Label 1: Screen Photo). It outputs a continuous confidence score from `0.0` (definitely real) to `1.0` (definitely a screen).
+- **0 → Real Photograph**
+- **1 → Photograph of a Digital Screen (Screen Recapture)**
 
----
-
-## Why Handcrafted Features Over Raw Pixels?
-
-Deep learning models trained directly on raw pixels are prone to overfitting to background details, lighting conditions, or camera resolutions, rather than the intrinsic physical differences between a real scene and a digital monitor. 
-
-This system uses a highly optimized **hybrid of handcrafted statistical, spectral, and textural features** that target the physical signatures of screens:
-1. **Moire Patterns (FFT Analysis)**: Digitizing an LCD display produces high-frequency, periodic grid-like interference known as Moire. By performing a 2D Fast Fourier Transform (FFT) and filtering low frequencies, the system isolates these mathematically periodic spikes.
-2. **Specular Glare (Reflection Ratio)**: Hard light reflecting off glass/monitor panels causes high-contrast, saturated glare spots (pixel values > 240).
-3. **LCD Grid Sharpness (Laplacian & LBP)**: Screen photos have a distinct pixelated grid texture that differs from natural organic textures, captured using Local Binary Patterns (LBP) and Laplacian sharpness variance.
-
-These handcrafted features are scale-invariant, computationally lightweight (runs in <50ms), and require a fraction of the training data needed for Deep Learning CNN/ViT models.
+The system is designed as a fast, lightweight, and explainable anti-spoofing solution using handcrafted image features and an XGBoost classifier.
 
 ---
 
-## Directory Structure
+# Features
+
+- Detects real photos vs. screen recaptures
+- Uses handcrafted computer vision features instead of deep learning
+- Lightweight and fast (~23 ms per image)
+- No GPU required
+- Command-line prediction interface
+- Streamlit web application for interactive testing
+- Automatic technical report generation after training
+
+---
+
+# Project Structure
 
 ```
-screen-photo-detector/
+Spot-the-Fake/
 │
 ├── dataset/
-│   ├── real/                   # Save genuine photographs here (Label 0)
-│   └── screen/                 # Save photographs taken of screens here (Label 1)
+│   ├── real/
+│   └── screen/
 │
-├── requirements.txt            # Python dependencies
-├── feature_extractor.py        # Core feature extraction class (9 features)
-├── train.py                    # Training script (XGBoost) & automatic report generator
-├── predict.py                  # CLI single-image prediction script
-├── streamlit_app.py            # Streamlit dashboard
-├── README.md                   # Installation & execution instructions
-└── report.md                   # Automatically generated technical report
+├── feature_extractor.py
+├── train.py
+├── predict.py
+├── streamlit_app.py
+├── screen_detector.pkl
+├── requirements.txt
+├── README.md
+├── report.md
+└── .gitignore
 ```
 
 ---
 
-## Step-by-Step Installation
+# Approach
 
-1. **Clone or Extract the Repository**:
-   ```bash
-   cd screen-photo-detector
-   ```
+Instead of training a deep neural network, this project extracts handcrafted features that capture the physical characteristics of screen recaptures.
 
-2. **Create a Virtual Environment**:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows use: venv\Scripts\activate
-   ```
+The extracted features include:
 
-3. **Install Dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+- **FFT (Fast Fourier Transform)** to detect Moiré patterns
+- **Reflection Analysis** for glass glare detection
+- **Laplacian Variance** for sharpness estimation
+- **Local Binary Patterns (LBP)** for texture analysis
+- Statistical image descriptors
+- Frequency-domain characteristics
+
+These features are fed into an **XGBoost Classifier**, which predicts the probability that the image is a screen recapture.
+
+This approach provides:
+
+- Better interpretability
+- Lower computational cost
+- Faster inference
+- Small model size
+- Good generalization with limited training data
 
 ---
 
-## Step-by-Step Execution Guide
+# Tech Stack
 
-### 1. Data Preparation
-Place your training images into the corresponding folders inside `dataset/`:
-- **Real Images**: Save inside `dataset/real/`
-- **Screen Images**: Save inside `dataset/screen/`
+- Python 3
+- OpenCV
+- NumPy
+- Scikit-image
+- Scikit-learn
+- XGBoost
+- Joblib
+- Streamlit
 
-*(Note: If these folders are empty, running `train.py` will automatically generate a synthetic calibration dataset of 200 realistic high-fidelity images to allow immediate training and testing out-of-the-box!)*
+---
 
-### 2. Model Training
-Run the training script. This script processes your images, extracts the 9 features, splits the data, trains an XGBClassifier, outputs performance metrics to the console, saves the `screen_detector.pkl` artifact, and outputs a complete `report.md` technical file.
+# Installation
+
+## Clone the repository
+
+```bash
+git clone https://github.com/Srishti0409/Spot-the-Fake-Screen-Recapture-Detection.git
+cd Spot-the-Fake-Screen-Recapture-Detection
+```
+
+---
+
+## Create Virtual Environment
+
+### Windows
+
+```bash
+python -m venv .venv
+.\.venv\Scripts\Activate
+```
+
+### Linux / macOS
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+---
+
+## Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+# Dataset
+
+Store the images as follows:
+
+```
+dataset/
+
+    real/
+        image1.jpg
+        image2.jpg
+        ...
+
+    screen/
+        image1.jpg
+        image2.jpg
+        ...
+```
+
+- **real/** → Genuine photographs
+- **screen/** → Photos taken of laptop/mobile/monitor screens
+
+---
+
+# Training
+
+Train the model using:
+
 ```bash
 python train.py
 ```
 
-### 3. CLI Single-Image Prediction
-To run a fast, standalone prediction on any image, execute `predict.py` with the image path. The script suppresses all logs and outputs **ONLY** the raw prediction score (0.00 to 1.00) rounded to two decimal places:
+Training automatically:
+
+- Extracts handcrafted features
+- Splits the dataset
+- Trains an XGBoost classifier
+- Evaluates performance
+- Saves the trained model (`screen_detector.pkl`)
+- Generates `report.md`
+
+---
+
+# Prediction
+
+Run prediction on a single image:
+
 ```bash
-python predict.py path/to/image.jpg
-```
-*Example output:*
-```
-0.87
+python predict.py image.jpg
 ```
 
-### 4. Run the Streamlit Dashboard App
-Start the local Streamlit application web interface to interactively upload and visualize the handcrafted features:
+Example:
+
+```bash
+python predict.py pothole_under_1MB.jpg
+```
+
+Output:
+
+```
+0.01
+```
+
+The script outputs **only one floating-point value** between **0 and 1**.
+
+| Output | Meaning |
+|---------|---------|
+| 0.00 | Real Photo |
+| 1.00 | Screen Photo |
+
+---
+
+# Streamlit Demo
+
+Launch the web application:
+
 ```bash
 streamlit run streamlit_app.py
 ```
-This launches a browser window (usually at `http://localhost:8501`) with a modern interactive dashboard where you can upload files and view real-time anti-spoofing indicators.
+
+Then open:
+
+```
+http://localhost:8501
+```
+
+Upload an image to receive a prediction along with extracted feature analysis.
+
+---
+
+# Performance
+
+Training Results:
+
+| Metric | Value |
+|--------|-------|
+| Accuracy | **97.50%** |
+| Precision | **100.00%** |
+| Recall | **95.00%** |
+| F1 Score | **97.44%** |
+
+Average Feature Extraction Latency:
+
+```
+23.36 ms per image
+```
+
+---
+
+# Cost
+
+Since the model runs entirely on-device:
+
+- Cost per image: **Approximately $0**
+- Cloud infrastructure: **Not required**
+
+---
+
+# Why This Approach?
+
+Compared to deep learning models, handcrafted feature extraction offers:
+
+- Lower memory usage
+- Faster inference
+- Better explainability
+- No GPU dependency
+- Excellent performance on small datasets
+
+This makes it well suited for lightweight anti-spoofing applications.
+
+---
+
+# Future Improvements
+
+- Larger and more diverse training dataset
+- CNN / Vision Transformer comparison
+- Mobile deployment
+- Real-time webcam inference
+- Automatic screen-region localization
+- Quantized model for edge devices
+
+---
+
+# Repository
+
+GitHub Repository:
+
+https://github.com/Srishti0409/Spot-the-Fake-Screen-Recapture-Detection
